@@ -25,10 +25,10 @@ class Ship:
         self.decks = []
         if start[0] == end[0]:
             for column in range(start[1], end[1] + 1):
-                self.decks.append(Deck(start[0], column))
+                self.decks.append(Deck(start[0], column, not is_drowned))
         elif start[1] == end[1]:
             for row in range(start[0], end[0] + 1):
-                self.decks.append(Deck(row, start[1]))
+                self.decks.append(Deck(row, start[1], not is_drowned))
         else:
             raise InvalidCoordsException(
                 "coords passed to Ship() are not valid"
