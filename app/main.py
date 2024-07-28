@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass
 from typing import TypeAlias, Iterable
 
@@ -48,6 +49,10 @@ class Ship:
         return False
 
 
+class InvalidFieldException(Exception):
+    pass
+
+
 class Battleship:
     FIELD_SIZE = 10
 
@@ -56,7 +61,14 @@ class Battleship:
         for start, end in ships:
             ship = Ship(start, end)
             for deck in ship.decks:
-                self.field[(deck.row, deck.column)] = ship
+                coord = (deck.row, deck.column)
+                if coord in self.field:
+                    raise InvalidFieldException(
+                        f"cell {coord} is already taken"
+                    )
+                self.field[coord] = ship
+
+        self._validate_field()
 
     def fire(self, location: Coord) -> str:
         if location not in self.field:
@@ -80,3 +92,42 @@ class Battleship:
                 else:
                     print("*", end=" ")
             print()
+
+    def _validate_field(self) -> None:
+        self._validate_ship_count()
+        self._validate_ship_positions()
+
+    def _validate_ship_count(self) -> None:
+        ships = set(self.field.values())
+        if len(ships) != 10:
+            raise InvalidFieldException(
+                "the total number of the ships should be 10"
+            )
+        counter = Counter(len(ship.decks) for ship in ships)
+        for size, expected_count, verbose_name in (
+            (1, 4, "single"),
+            (2, 3, "double"),
+            (3, 2, "three"),
+            (4, 1, "four"),
+        ):
+            if counter[size] != expected_count:
+                raise InvalidFieldException(
+                    f"there should be {expected_count} {verbose_name}-deck"
+                    " ship" + ("s" if expected_count != 1 else "")
+                )
+
+    def _validate_ship_positions(self) -> None:
+        for row, column in self.field:
+            current_ship = self.field[(row, column)]
+            # check nearby cells
+            for row_adj in range(-1, 2):
+                for column_adj in range(-1, 2):
+                    coord = (row + row_adj, column + column_adj)
+                    if (
+                        coord in self.field
+                        and self.field[coord] is not current_ship
+                    ):
+                        raise InvalidFieldException(
+                            "ships shouldn't be located in the"
+                            " neighboring cells"
+                        )
